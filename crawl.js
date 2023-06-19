@@ -1,5 +1,30 @@
 const {JSDOM} = require('jsdom')
 
+async function crawlPage(currentUrl) {
+    console.log(`actively crawling: ${currentUrl}`)
+
+    try {
+        const res = await fetch(currentUrl)
+
+        if (res.status > 399) {
+            console.log(`error in fetch with status code: ${res.status}, on page: ${currentUrl}`)
+            return
+        }
+
+        const contentType = res.headers.get("content-type")
+        if (!contentType.includes('text/html')) {
+            console.log(`non html response, content type received: ${contentType}, on page: ${currentUrl}`)
+            return
+        }
+
+        const text = await res.text()
+        console.log(text)
+
+    } catch(err) {
+        console.log(`error in fetch: ${err.message}, on page: ${currentUrl}`)
+    }
+}
+
 function getUrlsFromHtml(htmlBody, baseUrl){
     const urls = []
     const {window} = new JSDOM(htmlBody)
@@ -7,7 +32,6 @@ function getUrlsFromHtml(htmlBody, baseUrl){
     for (const linkElement of linkElements) {
         if (linkElement.href.slice(0,1) === '/') {
             const absoluteUrl = `${baseUrl}${linkElement.href}`
-
             try {
                 const urlObj = new URL(absoluteUrl)
                 urls.push(urlObj.href)
@@ -15,7 +39,6 @@ function getUrlsFromHtml(htmlBody, baseUrl){
                 console.log(`Error with ${linkElement.href} relative url: ${err.message}`)
             }
         } else {
-
             try {
                 const urlObj = new URL(linkElement.href)
                 urls.push(urlObj.href)
@@ -24,11 +47,6 @@ function getUrlsFromHtml(htmlBody, baseUrl){
             }
         }
 
-        // if (linkElement.href.includes('http')) {
-        //     urls.push(linkElement.href)
-        // } else {
-        //     urls.push(`${baseUrl}${linkElement.href}`)
-        // }
     }
     return urls
 }
@@ -43,5 +61,5 @@ function normalizeURL(urlString) {
 }
 
 module.exports = {
-    normalizeURL, getUrlsFromHtml
+    normalizeURL, getUrlsFromHtml, crawlPage
 }
